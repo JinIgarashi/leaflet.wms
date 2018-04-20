@@ -168,7 +168,13 @@ wms.Source = L.Layer.extend({
     },
 
     'ajax': function(url, callback) {
-        ajax.call(this, url, callback);
+    	if (this.options.info_format === "application/json"){
+    		ajax.call(this, url, function(result) {
+            	callback.call(this, result);
+            });
+    	}else{
+    		ajax.call(this, url, callback);
+    	}
     },
 
     'getIdentifyLayers': function() {
@@ -215,7 +221,31 @@ wms.Source = L.Layer.extend({
         if (!this._map) {
             return;
         }
-        this._map.openPopup(info, latlng);
+        if (this.options.info_format === "application/json"){
+        	info = JSON.parse(info);
+        	if (info && info.length === 0){
+	        	return;
+	        };
+	        var html = "";
+	        for (var i in info.features){
+	        	var f = info.features[i];
+	        	for (var name in f.properties){
+	        		var val = f.properties[name];
+	        		if (!val){
+	        			val = "";
+	        		};
+	        		html += "<tr><th>" + name + "</th><td>" + val + "</td></tr>"
+	        	};
+	        	
+	        };
+	        if (html === ""){
+	        	return;
+	        };
+	        html = "<table class='popup-table-wms-getfeatureinfo'>" + html + "</table>";
+	        this._map.openPopup(html, latlng);
+        }else{
+        	this._map.openPopup(info, latlng);
+        }
     },
 
     'showWaiting': function() {
